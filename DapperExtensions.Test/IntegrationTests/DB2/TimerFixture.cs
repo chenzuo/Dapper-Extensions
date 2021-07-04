@@ -1,16 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using DapperExtensions.Test.IntegrationTests.DB2.Data;
-using DapperExtensions.Test.IntegrationTests.DB2;
+﻿#if NETCOREAPP
+using DapperExtensions.Test.Data.DB2;
 using NUnit.Framework;
+using System;
+using System.Collections.Generic;
 
 namespace DapperExtensions.Test.IntegrationTests.DB2
 {
     [TestFixture]
-    public class TimerFixture
+    [Parallelizable(ParallelScope.All)]
+    public static class TimerFixture
     {
-        private static int cnt = 1000;
+        private const int cnt = 1000;
 
         public class InsertTimes : DB2BaseFixture
         {
@@ -26,7 +26,7 @@ namespace DapperExtensions.Test.IntegrationTests.DB2
                 };
                 Db.Insert(p);
                 DateTime start = DateTime.Now;
-                List<int> ids = new List<int>();
+                var ids = new List<long>();
                 for (int i = 0; i < cnt; i++)
                 {
                     Person p2 = new Person
@@ -42,7 +42,8 @@ namespace DapperExtensions.Test.IntegrationTests.DB2
 
                 double total = DateTime.Now.Subtract(start).TotalMilliseconds;
                 Console.WriteLine("Total Time:" + total);
-                Console.WriteLine("Average Time:" + total / cnt);
+                Console.WriteLine("Average Time:" + (total / cnt));
+                Dispose();
             }
 
             [Test]
@@ -57,7 +58,7 @@ namespace DapperExtensions.Test.IntegrationTests.DB2
                 };
                 Db.Insert(p);
                 DateTime start = DateTime.Now;
-                List<int> ids = new List<int>();
+                var ids = new List<long>();
                 for (int i = 0; i < cnt; i++)
                 {
                     Person p2 = new Person
@@ -73,7 +74,8 @@ namespace DapperExtensions.Test.IntegrationTests.DB2
 
                 double total = DateTime.Now.Subtract(start).TotalMilliseconds;
                 Console.WriteLine("Total Time:" + total);
-                Console.WriteLine("Average Time:" + total / cnt);
+                Console.WriteLine("Average Time:" + (total / cnt));
+                Dispose();
             }
 
             [Test]
@@ -93,7 +95,8 @@ namespace DapperExtensions.Test.IntegrationTests.DB2
 
                 double total = DateTime.Now.Subtract(start).TotalMilliseconds;
                 Console.WriteLine("Total Time:" + total);
-                Console.WriteLine("Average Time:" + total / cnt);
+                Console.WriteLine("Average Time:" + (total / cnt));
+                Dispose();
             }
 
             [Test]
@@ -113,8 +116,10 @@ namespace DapperExtensions.Test.IntegrationTests.DB2
 
                 double total = DateTime.Now.Subtract(start).TotalMilliseconds;
                 Console.WriteLine("Total Time:" + total);
-                Console.WriteLine("Average Time:" + total / cnt);
+                Console.WriteLine("Average Time:" + (total / cnt));
+                Dispose();
             }
         }
     }
 }
+#endif

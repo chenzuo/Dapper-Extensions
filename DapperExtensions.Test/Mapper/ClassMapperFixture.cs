@@ -1,18 +1,20 @@
-﻿using System;
+﻿using DapperExtensions.Mapper;
+using DapperExtensions.Test.Helpers;
+using Moq;
+using NUnit.Framework;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Numerics;
 using System.Reflection;
-using DapperExtensions.Mapper;
-using DapperExtensions.Test.Helpers;
-using Moq;
-using NUnit.Framework;
 
 namespace DapperExtensions.Test.Mapper
 {
     [TestFixture]
-    public class ClassMapperFixture
+    [Parallelizable(ParallelScope.All)]
+    public static class ClassMapperFixture
     {
         public abstract class ClassMapperFixtureBase
         {
@@ -30,6 +32,7 @@ namespace DapperExtensions.Test.Mapper
         [TestFixture]
         public class UnMapTests : ClassMapperFixtureBase
         {
+            [ExcludeFromCodeCoverage]
             public class Foo
             {
                 public string Name { get; set; }
@@ -42,7 +45,7 @@ namespace DapperExtensions.Test.Mapper
                 }
 
                 //hook to access protected methods
-                public new PropertyMap Map(Expression<Func<Foo, object>> expression)
+                public new MemberMap Map(Expression<Func<Foo, object>> expression)
                 {
                     return base.Map(expression);
                 }
@@ -54,9 +57,9 @@ namespace DapperExtensions.Test.Mapper
                 }
             }
 
-            private bool mappingExists(FooClassMapper mapper)
+            private static bool MappingExists(FooClassMapper mapper)
             {
-                return mapper.Properties.Where(w => w.Name == "Name").Count() == 1;
+                return mapper.Properties.Count(w => w.Name == "Name") == 1;
             }
 
             [Test]
@@ -65,19 +68,21 @@ namespace DapperExtensions.Test.Mapper
                 var target = new FooClassMapper();
 
                 target.Map(p => p.Name);
-                Assert.IsTrue(mappingExists(target));
+                Assert.IsTrue(MappingExists(target));
 
                 target.UnMap(p => p.Name);
-                Assert.IsFalse(mappingExists(target));
+                Assert.IsFalse(MappingExists(target));
             }
 
             [Test]
-            [ExpectedException(typeof(ApplicationException))]
+            //[ExpectedException(typeof(ApplicationException))]
             public void UnMapThrowExceptionWhenMappingDidntPreviouslyExist()
             {
                 var target = new FooClassMapper();
 
-                target.UnMap(p => p.Name);
+                var ex = Assert.Throws<ApplicationException>(() => target.UnMap(p => p.Name));
+
+                StringAssert.Contains("mapping does not exist", ex.Message);
             }
         }
 
@@ -220,6 +225,7 @@ namespace DapperExtensions.Test.Mapper
                 Assert.AreEqual(KeyType.Assigned, mapper3.Properties[0].KeyType);
             }
 
+            [ExcludeFromCodeCoverage]
             private class Test1<T>
             {
                 public T SomeId { get; set; }
@@ -273,7 +279,7 @@ namespace DapperExtensions.Test.Mapper
             [Test]
             public void DoesNotMapAlreadyMappedProperties()
             {
-                Mock<IPropertyMap> property = new Mock<IPropertyMap>();
+                Mock<IMemberMap> property = new Mock<IMemberMap>();
                 property.SetupGet(p => p.Name).Returns("FooId");
                 property.SetupGet(p => p.KeyType).Returns(KeyType.Assigned);
 
@@ -291,7 +297,7 @@ namespace DapperExtensions.Test.Mapper
             {
                 var mapper = GetMapper<Foo>();
                 mapper.TestProtected().RunMethod("AutoMap");
-                Assert.AreEqual(2, mapper.Properties.Count);
+                Assert.AreEqual(4, mapper.Properties.Count);
             }
 
             [Test]
@@ -300,19 +306,69 @@ namespace DapperExtensions.Test.Mapper
                 var mapper = new TestMapper<Foo>();
                 mapper.Map(m => m.List).Ignore();
                 mapper.TestProtected().RunMethod("AutoMap");
-                Assert.AreEqual(2, mapper.Properties.Count);
+                Assert.AreEqual(4, mapper.Properties.Count);
             }
 
             [Test]
             public void DoesNotMapPropertyWhenCanMapIsFalse()
             {
                 var mapper = new TestMapper<Foo>();
-                Func<Type, PropertyInfo, bool> canMap = (t, p) => ReflectionHelper.IsSimpleType(p.PropertyType);
+                Func<Type, PropertyInfo, bool> canMap = (_, p) => ReflectionHelper.IsSimpleType(p.PropertyType);
                 mapper.TestProtected().RunMethod("AutoMap", canMap);
-                Assert.AreEqual(1, mapper.Properties.Count);                
+                Assert.AreEqual(3, mapper.Properties.Count);
             }
         }
 
+        [TestFixture]
+        public class ReferenceMapTests : ClassMapperFixtureBase
+        {
+            [ExcludeFromCodeCoverage]
+            public class FooWithReferencence
+            {
+                public long FooId { get; set; }
+                public string Value { get; set; }
+                public long BarId { get; set; }
+                public Bar Bar { get; set; }
+            }
+
+            [ExcludeFromCodeCoverage]
+            public class Bar
+            {
+                public long BarId { get; set; }
+                public string Name { get; set; }
+            }
+
+            [Test]
+            public void MappAllReferenceMaps()
+            {
+                var mapper = base.GetMapper<FooWithReferencence>();
+                Expression<Func<FooWithReferencence, object>> refMapExpression = (exp) => exp.Bar;
+
+                Expression<Func<Bar, FooWithReferencence, object>> refExpression = (foo, bar) => foo.BarId == bar.BarId;
+
+                var referenceMap = mapper.TestProtected()
+                    .RunMethod<ReferenceMap<FooWithReferencence>>("ReferenceMap", new object[] { refMapExpression });
+
+                var refMethod = referenceMap
+                    .TestProtected()
+                    .ExectueGenericMethod("Reference", new Type[] { typeof(Bar) }, new object[] { refExpression });
+
+                Assert.Greater(mapper.References.Count, 0);
+                Assert.AreEqual(mapper.References[0].ReferenceProperties[0].LeftProperty.EntityType, typeof(Bar));
+                Assert.AreEqual(mapper.References[0].ReferenceProperties[0].RightProperty.EntityType, typeof(FooWithReferencence));
+            }
+        }
+
+        [ExcludeFromCodeCoverage]
+        public class Foo
+        {
+            public int FooId { get; set; }
+            public string Value { get; set; }
+            public int BarId { get; set; }
+            public IList<string> List { get; set; }
+        }
+
+        [ExcludeFromCodeCoverage]
         public class FooWithIntId
         {
             public int FooId { get; set; }
@@ -320,6 +376,7 @@ namespace DapperExtensions.Test.Mapper
             public int BarId { get; set; }
         }
 
+        [ExcludeFromCodeCoverage]
         public class FooWithGuidId
         {
             public Guid FooId { get; set; }
@@ -327,6 +384,7 @@ namespace DapperExtensions.Test.Mapper
             public Guid BarId { get; set; }
         }
 
+        [ExcludeFromCodeCoverage]
         public class FooWithStringId
         {
             public string FooId { get; set; }
@@ -334,15 +392,17 @@ namespace DapperExtensions.Test.Mapper
             public string BarId { get; set; }
         }
 
-        public class Foo
+        [ExcludeFromCodeCoverage]
+        public class Bar
         {
-            public int FooId { get; set; }
-            public IEnumerable<string> List { get; set; }
+            public long BarId { get; set; }
+            public string Name { get; set; }
         }
 
+        [ExcludeFromCodeCoverage]
         public class TestMapper<T> : ClassMapper<T> where T : class
         {
-            public PropertyMap Map(Expression<Func<T, object>> expression)
+            public new MemberMap Map(Expression<Func<T, object>> expression)
             {
                 return base.Map(expression);
             }

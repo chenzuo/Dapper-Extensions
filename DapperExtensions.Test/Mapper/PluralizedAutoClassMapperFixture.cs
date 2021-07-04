@@ -1,14 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using DapperExtensions.Mapper;
+﻿using DapperExtensions.Mapper;
 using NUnit.Framework;
+using System;
 
 namespace DapperExtensions.Test.Mapper
 {
     [TestFixture]
-    public class PluralizedAutoClassMapperFixture
+    [Parallelizable(ParallelScope.All)]
+    public static class PluralizedAutoClassMapperFixture
     {
         [TestFixture]
         public class PluralizedAutoClassMapperTableName
@@ -69,7 +67,15 @@ namespace DapperExtensions.Test.Mapper
                 Assert.AreEqual("effects", m.TableName);
             }
 
-            private PluralizedAutoClassMapper<T> GetMapper<T>() where T : class
+            [Test]
+            public void ReturnsProperPluralizationWhenWordIsUnpluralizable()
+            {
+                PluralizedAutoClassMapper<Foo> m = GetMapper<Foo>();
+                m.Table("equipment");
+                Assert.AreEqual("equipment", m.TableName);
+            }
+
+            private static PluralizedAutoClassMapper<T> GetMapper<T>() where T : class
             {
                 return new PluralizedAutoClassMapper<T>();
             }
@@ -94,7 +100,7 @@ namespace DapperExtensions.Test.Mapper
                 Assert.AreEqual("People", m.TableName);
             }
 
-            private CustomPluralizedMapper<T> GetMapper<T>() where T : class
+            private static CustomPluralizedMapper<T> GetMapper<T>() where T : class
             {
                 return new CustomPluralizedMapper<T>();
             }

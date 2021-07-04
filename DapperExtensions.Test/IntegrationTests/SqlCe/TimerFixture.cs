@@ -1,15 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using DapperExtensions.Test.Data;
+﻿#if NETFRAMEWORK
+using DapperExtensions.Test.Data.Common;
 using NUnit.Framework;
+using System;
+using System.Collections.Generic;
 
 namespace DapperExtensions.Test.IntegrationTests.SqlCe
 {
     [TestFixture]
-    public class TimerFixture
+    [Parallelizable(ParallelScope.All)]
+    public static class TimerFixture
     {
-        private static int cnt = 1000;
+        private const int cnt = 1000;
 
         public class InsertTimes : SqlCeBaseFixture
         {
@@ -17,62 +18,62 @@ namespace DapperExtensions.Test.IntegrationTests.SqlCe
             public void IdentityKey_UsingEntity()
             {
                 Person p = new Person
-                               {
-                                   FirstName = "FirstName",
-                                   LastName = "LastName",
-                                   DateCreated = DateTime.Now,
-                                   Active = true
-                               };
+                {
+                    FirstName = "FirstName",
+                    LastName = "LastName",
+                    DateCreated = DateTime.Now,
+                    Active = true
+                };
                 Db.Insert(p);
                 DateTime start = DateTime.Now;
-                List<int> ids = new List<int>();
+                var ids = new List<long>();
                 for (int i = 0; i < cnt; i++)
                 {
                     Person p2 = new Person
-                                    {
-                                        FirstName = "FirstName" + i,
-                                        LastName = "LastName" + i,
-                                        DateCreated = DateTime.Now,
-                                        Active = true
-                                    };
+                    {
+                        FirstName = "FirstName" + i,
+                        LastName = "LastName" + i,
+                        DateCreated = DateTime.Now,
+                        Active = true
+                    };
                     Db.Insert(p2);
                     ids.Add(p2.Id);
                 }
 
                 double total = DateTime.Now.Subtract(start).TotalMilliseconds;
                 Console.WriteLine("Total Time:" + total);
-                Console.WriteLine("Average Time:" + total / cnt);
+                Console.WriteLine("Average Time:" + (total / cnt));
             }
 
             [Test]
             public void IdentityKey_UsingReturnValue()
             {
                 Person p = new Person
-                               {
-                                   FirstName = "FirstName",
-                                   LastName = "LastName",
-                                   DateCreated = DateTime.Now,
-                                   Active = true
-                               };
+                {
+                    FirstName = "FirstName",
+                    LastName = "LastName",
+                    DateCreated = DateTime.Now,
+                    Active = true
+                };
                 Db.Insert(p);
                 DateTime start = DateTime.Now;
-                List<int> ids = new List<int>();
+                var ids = new List<long>();
                 for (int i = 0; i < cnt; i++)
                 {
                     Person p2 = new Person
-                                    {
-                                        FirstName = "FirstName" + i,
-                                        LastName = "LastName" + i,
-                                        DateCreated = DateTime.Now,
-                                        Active = true
-                                    };
+                    {
+                        FirstName = "FirstName" + i,
+                        LastName = "LastName" + i,
+                        DateCreated = DateTime.Now,
+                        Active = true
+                    };
                     var id = Db.Insert(p2);
                     ids.Add(id);
                 }
 
                 double total = DateTime.Now.Subtract(start).TotalMilliseconds;
                 Console.WriteLine("Total Time:" + total);
-                Console.WriteLine("Average Time:" + total / cnt);
+                Console.WriteLine("Average Time:" + (total / cnt));
             }
 
             [Test]
@@ -91,7 +92,7 @@ namespace DapperExtensions.Test.IntegrationTests.SqlCe
 
                 double total = DateTime.Now.Subtract(start).TotalMilliseconds;
                 Console.WriteLine("Total Time:" + total);
-                Console.WriteLine("Average Time:" + total / cnt);
+                Console.WriteLine("Average Time:" + (total / cnt));
             }
 
             [Test]
@@ -110,7 +111,7 @@ namespace DapperExtensions.Test.IntegrationTests.SqlCe
 
                 double total = DateTime.Now.Subtract(start).TotalMilliseconds;
                 Console.WriteLine("Total Time:" + total);
-                Console.WriteLine("Average Time:" + total / cnt);
+                Console.WriteLine("Average Time:" + (total / cnt));
             }
 
             [Test]
@@ -130,7 +131,7 @@ namespace DapperExtensions.Test.IntegrationTests.SqlCe
 
                 double total = DateTime.Now.Subtract(start).TotalMilliseconds;
                 Console.WriteLine("Total Time:" + total);
-                Console.WriteLine("Average Time:" + total / cnt);
+                Console.WriteLine("Average Time:" + (total / cnt));
             }
 
             [Test]
@@ -150,8 +151,9 @@ namespace DapperExtensions.Test.IntegrationTests.SqlCe
 
                 double total = DateTime.Now.Subtract(start).TotalMilliseconds;
                 Console.WriteLine("Total Time:" + total);
-                Console.WriteLine("Average Time:" + total / cnt);
+                Console.WriteLine("Average Time:" + (total / cnt));
             }
         }
     }
 }
+#endif

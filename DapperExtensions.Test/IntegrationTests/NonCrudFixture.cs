@@ -1,18 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Reflection;
-using DapperExtensions.Mapper;
-using DapperExtensions.Test.Data;
+﻿using DapperExtensions.Mapper;
 using DapperExtensions.Test.Entities;
 using DapperExtensions.Test.Maps;
 using NUnit.Framework;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq.Expressions;
+using System.Reflection;
 
 namespace DapperExtensions.Test.IntegrationTests
 {
     [TestFixture]
-    public class NonCrudFixture
+    [Parallelizable(ParallelScope.All)]
+    public static class NonCrudFixture
     {
         [TestFixture]
         public class GetNextGuidMethod
@@ -66,12 +66,14 @@ namespace DapperExtensions.Test.IntegrationTests
                 Assert.AreEqual(typeof(AutoClassMapper<ExternallyMapped>), mapper.GetType());
             }
 
+            [ExcludeFromCodeCoverage]
             private class EntityWithoutMapper
             {
                 public int Id { get; set; }
                 public string Name { get; set; }
             }
 
+            [ExcludeFromCodeCoverage]
             private class EntityWithMapper
             {
                 public string Key { get; set; }
@@ -87,28 +89,72 @@ namespace DapperExtensions.Test.IntegrationTests
                 }
             }
 
+            [ExcludeFromCodeCoverage]
             private class EntityWithInterfaceMapper
             {
                 public string Key { get; set; }
                 public string Value { get; set; }
             }
 
+            [ExcludeFromCodeCoverage]
             private class EntityWithInterfaceMapperMapper : IClassMapper<EntityWithInterfaceMapper>
             {
-                public string SchemaName { get; private set; }
-                public string TableName { get; private set; }
-                public IList<IPropertyMap> Properties { get; private set; }
-                public Type EntityType { get; private set; }
+                public string SchemaName { get; }
+                public string TableName { get; }
+                public IList<IMemberMap> Properties { get; }
+                public Type EntityType { get; }
 
-                public PropertyMap Map(Expression<Func<EntityWithInterfaceMapper, object>> expression)
+                public string SimpleAlias { get; }
+
+                public IList<IReferenceMap> References { get; }
+
+                public Guid Identity { get; private set; }
+
+                public Guid ParentIdentity { get; private set; }
+
+                public MemberMap Map(Expression<Func<EntityWithInterfaceMapper, object>> expression)
                 {
                     throw new NotImplementedException();
                 }
 
-                public PropertyMap Map(PropertyInfo propertyInfo)
+                public MemberMap Map(PropertyInfo propertyInfo)
                 {
                     throw new NotImplementedException();
                 }
+
+                public void SetIdentity(Guid identity)
+                {
+                    throw new NotImplementedException();
+                }
+
+                public void SetParentIdentity(Guid identity)
+                {
+                    throw new NotImplementedException();
+                }
+            }
+        }
+
+        [TestFixture]
+        public class ConfigurationMethods
+        {
+            [Test]
+            public void SetCaseSensitiveSearch_True_ChangesCaseSensitiveSearchEnabled()
+            {
+                var config = new DapperExtensionsConfiguration();
+
+                config.SetCaseSensitiveSearch(true);
+
+                Assert.IsTrue(config.CaseSensitiveSearchEnabled);
+            }
+
+            [Test]
+            public void SetCaseSensitiveSearch_False_ChangesCaseSensitiveSearchEnabled()
+            {
+                var config = new DapperExtensionsConfiguration();
+
+                config.SetCaseSensitiveSearch(false);
+
+                Assert.IsFalse(config.CaseSensitiveSearchEnabled);
             }
         }
     }

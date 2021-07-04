@@ -1,14 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using DapperExtensions.Mapper;
+﻿using DapperExtensions.Mapper;
 using NUnit.Framework;
+using System;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 
 namespace DapperExtensions.Test.Mapper
 {
     [TestFixture]
-    public class AutoClassMapperFixture
+    [Parallelizable(ParallelScope.All)]
+    public static class AutoClassMapperFixture
     {
         [TestFixture]
         public class AutoClassMapperTableName
@@ -51,8 +51,8 @@ namespace DapperExtensions.Test.Mapper
                 var map = m.Properties.Single(p => p.KeyType == KeyType.Guid);
                 Assert.IsTrue(map.ColumnName == "SomeId");
             }
-            
-            private AutoClassMapper<T> GetMapper<T>() where T : class
+
+            private static AutoClassMapper<T> GetMapper<T>() where T : class
             {
                 return new AutoClassMapper<T>();
             }
@@ -75,7 +75,7 @@ namespace DapperExtensions.Test.Mapper
                 Assert.AreEqual("TheFoo", m.TableName);
             }
 
-            private CustomAutoMapper<T> GetMapper<T>() where T : class
+            private static CustomAutoMapper<T> GetMapper<T>() where T : class
             {
                 return new CustomAutoMapper<T>();
             }
@@ -96,31 +96,35 @@ namespace DapperExtensions.Test.Mapper
             }
         }
 
+        [ExcludeFromCodeCoverage]
         private class Foo
         {
             public Guid Id { get; set; }
             public Guid ParentId { get; set; }
         }
 
+        [ExcludeFromCodeCoverage]
         private class Foo2
         {
             public Guid ParentId { get; set; }
             public Guid Id { get; set; }
         }
 
-
+        [ExcludeFromCodeCoverage]
         private class IdIsFirst
         {
             public Guid Id { get; set; }
             public Guid ParentId { get; set; }
         }
 
+        [ExcludeFromCodeCoverage]
         private class IdIsSecond
         {
             public Guid ParentId { get; set; }
             public Guid Id { get; set; }
         }
 
+        [ExcludeFromCodeCoverage]
         private class IdDoesNotExist
         {
             public Guid SomeId { get; set; }

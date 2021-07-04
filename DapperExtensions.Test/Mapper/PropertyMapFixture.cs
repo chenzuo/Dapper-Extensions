@@ -1,15 +1,17 @@
-using System;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Reflection;
 using DapperExtensions.Mapper;
 using NUnit.Framework;
+using System;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq.Expressions;
+using System.Reflection;
 
 namespace DapperExtensions.Test.Mapper
 {
     [TestFixture]
+    [Parallelizable(ParallelScope.All)]
     public class PropertyMapFixture
     {
+        [ExcludeFromCodeCoverage]
         private class Foo
         {
             public int Bar { get; set; }
@@ -21,7 +23,7 @@ namespace DapperExtensions.Test.Mapper
         {
             Expression<Func<Foo, object>> expression = f => f.Bar;
             var pi = ReflectionHelper.GetProperty(expression) as PropertyInfo;
-            PropertyMap pm = new PropertyMap(pi);
+            MemberMap pm = new MemberMap(pi);
             Assert.AreEqual("Bar", pm.Name);
             Assert.AreEqual("Bar", pm.ColumnName);
         }
@@ -31,7 +33,7 @@ namespace DapperExtensions.Test.Mapper
         {
             Expression<Func<Foo, object>> expression = f => f.Baz;
             var pi = ReflectionHelper.GetProperty(expression) as PropertyInfo;
-            PropertyMap pm = new PropertyMap(pi);
+            MemberMap pm = new MemberMap(pi);
             pm.Column("X");
             Assert.AreEqual("Baz", pm.Name);
             Assert.AreEqual("X", pm.ColumnName);
@@ -42,7 +44,7 @@ namespace DapperExtensions.Test.Mapper
         {
             Expression<Func<Foo, object>> expression = f => f.Baz;
             var pi = ReflectionHelper.GetProperty(expression) as PropertyInfo;
-            PropertyMap pm = new PropertyMap(pi);
+            MemberMap pm = new MemberMap(pi);
             pm.Column("X").Key(KeyType.Identity);
             Assert.AreEqual("Baz", pm.Name);
             Assert.AreEqual("X", pm.ColumnName);

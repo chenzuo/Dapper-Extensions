@@ -1,14 +1,16 @@
-﻿using System.Text;
+﻿using DapperExtensions.Predicate;
+using DapperExtensions.Test.Data.Common;
+using FluentAssertions;
+using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using DapperExtensions.Test.Data;
-using NUnit.Framework;
 
 namespace DapperExtensions.Test.IntegrationTests.SqlServer
 {
     [TestFixture]
-    public class CrudFixture
+    [Parallelizable(ParallelScope.Self)]
+    public static class CrudFixture
     {
         [TestFixture]
         public class InsertMethod : SqlServerBaseFixture
@@ -17,7 +19,7 @@ namespace DapperExtensions.Test.IntegrationTests.SqlServer
             public void AddsEntityToDatabase_ReturnsKey()
             {
                 Person p = new Person { Active = true, FirstName = "Foo", LastName = "Bar", DateCreated = DateTime.UtcNow };
-                int id = Db.Insert(p);
+                var id = Db.Insert(p);
                 Assert.AreEqual(1, id);
                 Assert.AreEqual(1, p.Id);
             }
@@ -63,13 +65,13 @@ namespace DapperExtensions.Test.IntegrationTests.SqlServer
             public void UsingKey_ReturnsEntity()
             {
                 Person p1 = new Person
-                                {
-                                    Active = true,
-                                    FirstName = "Foo",
-                                    LastName = "Bar",
-                                    DateCreated = DateTime.UtcNow
-                                };
-                int id = Db.Insert(p1);
+                {
+                    Active = true,
+                    FirstName = "Foo",
+                    LastName = "Bar",
+                    DateCreated = DateTime.UtcNow
+                };
+                var id = Db.Insert(p1);
 
                 Person p2 = Db.Get<Person>(id);
                 Assert.AreEqual(id, p2.Id);
@@ -97,13 +99,13 @@ namespace DapperExtensions.Test.IntegrationTests.SqlServer
             public void UsingKey_DeletesFromDatabase()
             {
                 Person p1 = new Person
-                                {
-                                    Active = true,
-                                    FirstName = "Foo",
-                                    LastName = "Bar",
-                                    DateCreated = DateTime.UtcNow
-                                };
-                int id = Db.Insert(p1);
+                {
+                    Active = true,
+                    FirstName = "Foo",
+                    LastName = "Bar",
+                    DateCreated = DateTime.UtcNow
+                };
+                var id = Db.Insert(p1);
 
                 Person p2 = Db.Get<Person>(id);
                 Db.Delete(p2);
@@ -155,7 +157,7 @@ namespace DapperExtensions.Test.IntegrationTests.SqlServer
                 var list = Db.GetList<Person>();
                 Assert.AreEqual(3, list.Count());
 
-                var result = Db.Delete<Person>(new { LastName = "Bar"} );
+                var result = Db.Delete<Person>(new { LastName = "Bar" });
                 Assert.IsTrue(result);
 
                 list = Db.GetList<Person>();
@@ -170,13 +172,13 @@ namespace DapperExtensions.Test.IntegrationTests.SqlServer
             public void UsingKey_UpdatesEntity()
             {
                 Person p1 = new Person
-                                {
-                                    Active = true,
-                                    FirstName = "Foo",
-                                    LastName = "Bar",
-                                    DateCreated = DateTime.UtcNow
-                                };
-                int id = Db.Insert(p1);
+                {
+                    Active = true,
+                    FirstName = "Foo",
+                    LastName = "Bar",
+                    DateCreated = DateTime.UtcNow
+                };
+                var id = Db.Insert(p1);
 
                 var p2 = Db.Get<Person>(id);
                 p2.FirstName = "Baz";
@@ -255,18 +257,23 @@ namespace DapperExtensions.Test.IntegrationTests.SqlServer
         [TestFixture]
         public class GetPageMethod : SqlServerBaseFixture
         {
+            private void SetData(out dynamic id1, out dynamic id2, out dynamic id3, out dynamic id4)
+            {
+                id1 = Db.Insert(new Person { Active = true, FirstName = "Sigma", LastName = "Alpha", DateCreated = DateTime.UtcNow });
+                id2 = Db.Insert(new Person { Active = false, FirstName = "Delta", LastName = "Alpha", DateCreated = DateTime.UtcNow });
+                id3 = Db.Insert(new Person { Active = true, FirstName = "Theta", LastName = "Gamma", DateCreated = DateTime.UtcNow });
+                id4 = Db.Insert(new Person { Active = false, FirstName = "Iota", LastName = "Beta", DateCreated = DateTime.UtcNow });
+            }
+
             [Test]
             public void UsingNullPredicate_ReturnsMatching()
             {
-                var id1 = Db.Insert(new Person { Active = true, FirstName = "Sigma", LastName = "Alpha", DateCreated = DateTime.UtcNow });
-                var id2 = Db.Insert(new Person { Active = false, FirstName = "Delta", LastName = "Alpha", DateCreated = DateTime.UtcNow });
-                var id3 = Db.Insert(new Person { Active = true, FirstName = "Theta", LastName = "Gamma", DateCreated = DateTime.UtcNow });
-                var id4 = Db.Insert(new Person { Active = false, FirstName = "Iota", LastName = "Beta", DateCreated = DateTime.UtcNow });
+                SetData(out var id1, out var id2, out var id3, out var id4);
 
                 IList<ISort> sort = new List<ISort>
                                     {
                                         Predicates.Sort<Person>(p => p.LastName),
-                                        Predicates.Sort<Person>(p => p.FirstName)
+                                        Predicates.Sort<Person>("FirstName")
                                     };
 
                 IEnumerable<Person> list = Db.GetPage<Person>(null, sort, 0, 2);
@@ -278,38 +285,32 @@ namespace DapperExtensions.Test.IntegrationTests.SqlServer
             [Test]
             public void UsingPredicate_ReturnsMatching()
             {
-                var id1 = Db.Insert(new Person { Active = true, FirstName = "Sigma", LastName = "Alpha", DateCreated = DateTime.UtcNow });
-                var id2 = Db.Insert(new Person { Active = false, FirstName = "Delta", LastName = "Alpha", DateCreated = DateTime.UtcNow });
-                var id3 = Db.Insert(new Person { Active = true, FirstName = "Theta", LastName = "Gamma", DateCreated = DateTime.UtcNow });
-                var id4 = Db.Insert(new Person { Active = false, FirstName = "Iota", LastName = "Beta", DateCreated = DateTime.UtcNow });
+                SetData(out var id1, out var id2, out var id3, out var id4);
 
                 var predicate = Predicates.Field<Person>(f => f.Active, Operator.Eq, true);
                 IList<ISort> sort = new List<ISort>
                                     {
                                         Predicates.Sort<Person>(p => p.LastName),
-                                        Predicates.Sort<Person>(p => p.FirstName)
+                                        Predicates.Sort<Person>("FirstName")
                                     };
 
-                IEnumerable<Person> list = Db.GetPage<Person>(predicate, sort, 0, 3);
+                IEnumerable<Person> list = Db.GetPage<Person>(predicate, sort, 0, 2);
                 Assert.AreEqual(2, list.Count());
-                Assert.IsTrue(list.All(p => p.FirstName == "Sigma" || p.FirstName == "Theta"));
+                Assert.IsTrue(list.All(p => p.FirstName == "Sigma" || p.FirstName == "Theta" || p.FirstName == "Iota"));
             }
 
             [Test]
             public void NotFirstPage_Returns_NextResults()
             {
-                var id1 = Db.Insert(new Person { Active = true, FirstName = "Sigma", LastName = "Alpha", DateCreated = DateTime.UtcNow });
-                var id2 = Db.Insert(new Person { Active = false, FirstName = "Delta", LastName = "Alpha", DateCreated = DateTime.UtcNow });
-                var id3 = Db.Insert(new Person { Active = true, FirstName = "Theta", LastName = "Gamma", DateCreated = DateTime.UtcNow });
-                var id4 = Db.Insert(new Person { Active = false, FirstName = "Iota", LastName = "Beta", DateCreated = DateTime.UtcNow });
+                SetData(out var id1, out var id2, out var id3, out var id4);
 
                 IList<ISort> sort = new List<ISort>
                                     {
                                         Predicates.Sort<Person>(p => p.LastName),
-                                        Predicates.Sort<Person>(p => p.FirstName)
+                                        Predicates.Sort<Person>("FirstName")
                                     };
 
-                IEnumerable<Person> list = Db.GetPage<Person>(null, sort, 1, 2);
+                IEnumerable<Person> list = Db.GetPage<Person>(null, sort, 2, 2);
                 Assert.AreEqual(2, list.Count());
                 Assert.AreEqual(id4, list.First().Id);
                 Assert.AreEqual(id3, list.Skip(1).First().Id);
@@ -318,16 +319,13 @@ namespace DapperExtensions.Test.IntegrationTests.SqlServer
             [Test]
             public void UsingObject_ReturnsMatching()
             {
-                var id1 = Db.Insert(new Person { Active = true, FirstName = "Sigma", LastName = "Alpha", DateCreated = DateTime.UtcNow });
-                var id2 = Db.Insert(new Person { Active = false, FirstName = "Delta", LastName = "Alpha", DateCreated = DateTime.UtcNow });
-                var id3 = Db.Insert(new Person { Active = true, FirstName = "Theta", LastName = "Gamma", DateCreated = DateTime.UtcNow });
-                var id4 = Db.Insert(new Person { Active = false, FirstName = "Iota", LastName = "Beta", DateCreated = DateTime.UtcNow });
+                SetData(out var id1, out var id2, out var id3, out var id4);
 
                 var predicate = new { Active = true };
                 IList<ISort> sort = new List<ISort>
                                     {
                                         Predicates.Sort<Person>(p => p.LastName),
-                                        Predicates.Sort<Person>(p => p.FirstName)
+                                        Predicates.Sort<Person>("FirstName")
                                     };
 
                 IEnumerable<Person> list = Db.GetPage<Person>(predicate, sort, 0, 3);
@@ -393,7 +391,7 @@ namespace DapperExtensions.Test.IntegrationTests.SqlServer
                 Db.Insert(new Animal { Name = "Bar" });
                 Db.Insert(new Animal { Name = "Baz" });
 
-                GetMultiplePredicate predicate = new GetMultiplePredicate();
+                var predicate = new GetMultiplePredicate();
                 predicate.Add<Person>(null);
                 predicate.Add<Animal>(Predicates.Field<Animal>(a => a.Name, Operator.Like, "Ba%"));
                 predicate.Add<Person>(Predicates.Field<Person>(a => a.LastName, Operator.Eq, "c1"));
@@ -403,9 +401,10 @@ namespace DapperExtensions.Test.IntegrationTests.SqlServer
                 var animals = result.Read<Animal>().ToList();
                 var people2 = result.Read<Person>().ToList();
 
-                Assert.AreEqual(4, people.Count);
-                Assert.AreEqual(2, animals.Count);
-                Assert.AreEqual(1, people2.Count);
+                people.Should().HaveCount(4);
+                animals.Should().HaveCount(2);
+                people2.Should().HaveCount(1);
+                Dispose();
             }
         }
     }
